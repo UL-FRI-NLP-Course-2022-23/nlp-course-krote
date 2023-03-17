@@ -2,7 +2,7 @@
 
 Team members:
  * `Nela Petrželková`, `70090038`, `np91887@student.uni-lj.si`
- * `MEMBER FULL NAME`, `STUDENT ID`, `STUDENT E-MAIL`
+ * `Žan Horvat`, `63190120`, `zh0444@student.uni-lj.si`
  * `MEMBER FULL NAME`, `STUDENT ID`, `STUDENT E-MAIL`
  
 Group public acronym/name: `THINK OF PUBLIC STRING FOR YOUR GROUP`
