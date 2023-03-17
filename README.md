@@ -1,7 +1,7 @@
-# Natural language processing course 2022/23: `Put name of your project here`
+# Natural language processing course 2022/23: `Paraphrasing sentences`
 
 Team members:
- * `MEMBER FULL NAME`, `STUDENT ID`, `STUDENT E-MAIL`
+ * `Nela Petrželková`, `70090038`, `np91887@student.uni-lj.si`
  * `MEMBER FULL NAME`, `STUDENT ID`, `STUDENT E-MAIL`
  * `MEMBER FULL NAME`, `STUDENT ID`, `STUDENT E-MAIL`
  
