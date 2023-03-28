@@ -5,5 +5,5 @@ Team members:
  * `Žan Horvat`, `63190120`, `zh0444@student.uni-lj.si`
  * `Žiga Patačko Koderman`, `63200339`, `zp3833@student.uni-lj.si`
  
-Group public acronym/name: `THINK OF PUBLIC STRING FOR YOUR GROUP`
+Group public acronym/name: `Krote`
  > This value will be used for publishing marks/scores. It will be known only to you and not you colleagues.
