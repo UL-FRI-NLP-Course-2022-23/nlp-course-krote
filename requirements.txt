@@ -4,3 +4,5 @@ datasets
 torch
 tensorflow
 scikit-learn
+accelerate
+nvidia-ml-py3
