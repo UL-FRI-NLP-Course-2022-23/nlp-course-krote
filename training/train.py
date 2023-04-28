@@ -5,7 +5,9 @@ from transformers import (
     DataCollatorForLanguageModeling,
     Trainer,
     AutoConfig,
+    EvalPrediction
 )
+from datasets import load_metric
 from sklearn.model_selection import train_test_split
 
 import torch.nn as nn
@@ -30,6 +32,10 @@ def print_gpu_utilization():
     info = nvmlDeviceGetMemoryInfo(handle)
     print(f"GPU memory occupied: {info.used//1024**2} MB.")
 
+def compute_metrics(eval_pred: EvalPrediction):
+    predictions, labels = eval_pred
+    perplexity = torch.exp(torch.tensor(predictions.loss))
+    return {"perplexity": perplexity}
 
 def tokenize_function(examples):
     return tokenizer(
@@ -92,11 +98,15 @@ tokenized_eval_dataset = eval_dataset.map(tokenize_function, batched=True)
 training_args = TrainingArguments(
     output_dir="./output",
     evaluation_strategy="epoch",
-    learning_rate=2e-5,
-    per_device_train_batch_size=2,
-    per_device_eval_batch_size=2,
-    num_train_epochs=2,
-    weight_decay=0.01,
+    learning_rate=1e-5,
+    per_device_train_batch_size=3,
+    per_device_eval_batch_size=3,
+    num_train_epochs=20,
+    weight_decay=1e-3,
+    load_best_model_at_end=True,
+    metric_for_best_model="perplexity",
+    greater_is_better=False,
+    save_strategy="epoch",
 )
 
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
@@ -107,9 +117,10 @@ trainer = Trainer(
     train_dataset=tokenized_train_dataset,
     eval_dataset=tokenized_eval_dataset,
     data_collator=data_collator,
+    compute_metrics=compute_metrics,
 )
 
 trainer.train()
 
-model.save_pretrained(model_name)
+trainer.model.model.save_pretrained(model_name)
 tokenizer.save_pretrained(model_name)
