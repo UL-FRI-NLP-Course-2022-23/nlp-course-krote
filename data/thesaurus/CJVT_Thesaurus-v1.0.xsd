@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <!-- root element -->
+  <xs:element name="base">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="entry"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- dictionary entry element -->
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="headword"/>
+        <xs:element minOccurs="0" ref="groups_core"/>
+        <xs:element minOccurs="0" ref="groups_near"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- headword element -->
+  <xs:element name="headword">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="id" type="xs:ID"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <!-- group of (clusters of) synonyms, statistically closer to the headword -->
+  <xs:element name="groups_core">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="group"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- group of (clusters of) synonyms, loosely connected with the headword -->
+  <xs:element name="groups_near">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="group"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- cluster of synonyms, grouped according to PageRank score -->
+  <xs:element name="group">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="candidate"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- synonym candidate, with optional domain labels -->
+  <xs:element name="candidate">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="s"/>
+        <xs:element minOccurs="0" ref="labels"/>
+      </xs:sequence>
+      <xs:attribute name="score"/>
+    </xs:complexType>
+  </xs:element>
+  <!-- synonym candidate -->
+  <xs:element name="s">
+    <xs:complexType mixed="true">
+      <xs:attribute name="id" type="xs:ID"/>
+    </xs:complexType>
+  </xs:element>
+  <!-- (groups of) domain label(s) -->
+  <xs:element name="labels">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="la"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- domain label -->
+  <xs:element name="la"/>
+</xs:schema>
