@@ -1,17 +1,10 @@
-from transformers import AutoTokenizer, AutoModelWithLMHead
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
-# Load tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained("path/to/trained/model")
-model = AutoModelWithLMHead.from_pretrained("path/to/trained/model")
+tokenizer = AutoTokenizer.from_pretrained("my_fine_tuned_model")
+model = AutoModelForCausalLM.from_pretrained("my_fine_tuned_model")
 
-# Define function to generate prompts
-def generate_prompt():
+while True:
     prompt = input("Enter your prompt: ")
     input_ids = tokenizer.encode(prompt, return_tensors="pt")
     output = model.generate(input_ids, max_length=50, do_sample=True)
-    generated = tokenizer.decode(output[0], skip_special_tokens=True)
-    print(generated)
-
-# Call generate_prompt() function
-while True:
-    generate_prompt()
+    print(tokenizer.decode(output[0], skip_special_tokens=True))
