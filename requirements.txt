@@ -6,3 +6,5 @@ tensorflow
 scikit-learn
 accelerate
 nvidia-ml-py3
+nltk
+rouge_score
