@@ -103,14 +103,15 @@ class ParaphraseGenerator(pl.LightningModule):
 
 class SaveCallback(Callback):
     def on_epoch_end(self, trainer, pl_module):
-        if pl_module.current_epoch > 0:
-            current_epoch = str(pl_module.current_epoch)
-            fn = f"epoch_{current_epoch}"
-            new_path = f"{SAVE_PATH}/{fn}/"
-            if fn not in os.listdir(SAVE_PATH):
-                os.mkdir(new_path)
-            pl_module.tokenizer.save_vocabulary(new_path)
-            pl_module.model.save_pretrained(new_path)
+        print("Saving on epoch end")
+        current_epoch = str(pl_module.current_epoch)
+        fn = f"epoch_{current_epoch}"
+        new_path = f"{SAVE_PATH}/{fn}/"
+        if fn not in os.listdir(SAVE_PATH):
+            os.mkdir(new_path)
+        pl_module.tokenizer.save_vocabulary(new_path)
+        pl_module.model.save_pretrained(new_path)
+        pl_module.tokenizer.save_pretrained(new_path)
 
 
 trainer = pl.Trainer(
