@@ -1,114 +1,138 @@
-from transformers import (
-    AutoTokenizer,
-    AutoModelWithLMHead,
-    TrainingArguments,
-    DataCollatorForLanguageModeling,
-    Trainer,
-    AutoConfig,
-    EvalPrediction,
-)
-from datasets import load_metric
 from sklearn.model_selection import train_test_split
-
-import torch.nn as nn
-import torch.nn.functional as F
-from sklearn.metrics.pairwise import cosine_similarity
-
-from datasets import Dataset
-import torch
-import sys
+from transformers import T5ForConditionalGeneration, T5TokenizerFast
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import TensorBoardLogger
 import json
+import torch
+from torch.utils.data import TensorDataset, random_split, DataLoader
 
-from pynvml import *
+# from transformers.optimization import AdamW
+from torch.optim import AdamW
+from tqdm import tqdm
+import sys
+import os
+from pytorch_lightning.callbacks import Callback
 
-from datasets import load_metric
-
-rouge = load_metric("rouge")
-
-
-def compute_metrics(eval_pred: EvalPrediction):
-    predictions, labels = eval_pred
-    rouge_scores = rouge.compute(predictions=predictions, references=labels)
-    return rouge_scores
-
-
-dataset_path = sys.argv[1]
-model_name = sys.argv[2]
+TRAIN_DATA_PATH = sys.argv[1]
+SAVE_PATH = sys.argv[2]
 
 
-def print_gpu_utilization():
-    nvmlInit()
-    handle = nvmlDeviceGetHandleByIndex(0)
-    info = nvmlDeviceGetMemoryInfo(handle)
-    print(f"GPU memory occupied: {info.used//1024**2} MB.")
+class ParaphraseGenerator(pl.LightningModule):
+    def __init__(self):
+        super().__init__()
+        model_name = "cjvt/t5-sl-small"
+        self.model = T5ForConditionalGeneration.from_pretrained(model_name)
+        self.tokenizer = T5TokenizerFast.from_pretrained(model_name)
+        self.batch_size = 16
+        self.lr = 4e-5
+
+    def encode_text(self, data):
+        for item in tqdm(data):
+            # tokenizing original and paraphrase:
+            source = self.tokenizer(
+                item["original"],
+                max_length=160,
+                truncation=True,
+                padding="max_length",
+                return_tensors="pt",
+            )
+            target = self.tokenizer(
+                item["paraphrased"],
+                max_length=200,
+                truncation=True,
+                padding="max_length",
+                return_tensors="pt",
+            )
+            yield source["input_ids"], target["input_ids"]
+
+    def to_tensor(self, source_ids, target_ids):
+        source_ids = torch.cat(source_ids, dim=0)
+        target_ids = torch.cat(target_ids, dim=0)
+        data = TensorDataset(source_ids, target_ids)
+        return random_split(data, [len(data), 0])[0]
+
+    def prepare_data(self):
+        with open(TRAIN_DATA_PATH, "r", encoding="utf-8") as r:
+            data = json.load(r)
+
+        # Train test split
+        train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+        print("Train data size:", len(train_data))
+        print("Test data size:", len(test_data))
+
+        source_ids, target_ids = list(zip(*tuple(self.encode_text(train_data))))
+        self.train_ds = self.to_tensor(source_ids, target_ids)
+
+        source_ids, target_ids = list(zip(*tuple(self.encode_text(test_data))))
+        self.test_ds = self.to_tensor(source_ids, target_ids)
+
+    def forward(self, batch, batch_idx):
+        source_ids, target_ids = batch[:2]
+        return self.model(input_ids=source_ids, labels=target_ids)
+
+    def training_step(self, batch, batch_idx):
+        loss = self(batch, batch_idx)[0]
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        loss = self(batch, batch_idx)[0]
+        self.log("val_loss", loss)
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_ds,
+            batch_size=self.batch_size,
+            drop_last=True,
+            shuffle=True,
+            num_workers=12,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.test_ds,
+            batch_size=self.batch_size,
+            drop_last=False,
+            shuffle=False,
+            num_workers=12,
+        )
+
+    def configure_optimizers(self):
+        return AdamW(self.parameters(), lr=self.lr, weight_decay=0.01)
 
 
-def tokenize_function(examples):
-    return tokenizer(
-        examples["input"], padding="max_length", truncation=True, max_length=128
-    )
+class SaveCallback(Callback):
+    def on_epoch_end(self, trainer, pl_module):
+        if pl_module.current_epoch > 0:
+            current_epoch = str(pl_module.current_epoch)
+            fn = f"epoch_{current_epoch}"
+            new_path = f"{SAVE_PATH}/{fn}/"
+            if fn not in os.listdir(SAVE_PATH):
+                os.mkdir(new_path)
+            pl_module.tokenizer.save_vocabulary(new_path)
+            pl_module.model.save_pretrained(new_path)
 
 
-tokenizer = AutoTokenizer.from_pretrained("cjvt/gpt-sl-base")
-print_gpu_utilization()
-model = AutoModelWithLMHead.from_pretrained("cjvt/gpt-sl-base").to("cuda")
-print_gpu_utilization()
-
-tmp = []
-with open(dataset_path, "r") as f:
-    tmp = json.load(f)
-
-tmp = list(
-    filter(lambda x: x["paraphrased"] is not None and x["original"] is not None, tmp)
+trainer = pl.Trainer(
+    default_root_dir="logs",
+    min_epochs=8,
+    max_epochs=64,
+    val_check_interval=0.25,
+    accumulate_grad_batches=4,
+    callbacks=[SaveCallback()],
+    logger=TensorBoardLogger("logs/", name="paraphrase", version=0),
 )
-tmp_train, tmp_eval = train_test_split(tmp, test_size=0.2)
 
-# Modify the input format to include the "paraphrase" prompt
-train_data = {
-    "input": ["Originalno: " + x["original"] for x in tmp_train],
-    "output": ["Parafrazirano: " + x["paraphrased"] for x in tmp_train],
-}
-eval_data = {
-    "input": ["Originalno: " + x["original"] for x in tmp_eval],
-    "output": ["Parafrazirano: " + x["paraphrased"] for x in tmp_eval],
-}
+para_model = ParaphraseGenerator()
+trainer.fit(para_model)
 
-train_dataset = Dataset.from_dict(train_data)
-eval_dataset = Dataset.from_dict(eval_data)
-print(len(train_data["input"]), len(eval_data["input"]))
+print("Saving model...")
+SAVE_PATH_FINAL = f"{SAVE_PATH}_final"
+# Create dir if not exists
+if not os.path.exists(SAVE_PATH_FINAL):
+    os.makedirs(SAVE_PATH_FINAL)
+para_model.tokenizer.save_vocabulary(SAVE_PATH_FINAL)
+para_model.tokenizer.save_pretrained(SAVE_PATH_FINAL)
+para_model.model.save_pretrained(SAVE_PATH_FINAL)
 
-tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True)
-tokenized_eval_dataset = eval_dataset.map(tokenize_function, batched=True)
-
-# Increase the number of training epochs
-num_epochs = 30
-
-training_args = TrainingArguments(
-    output_dir="./output",
-    evaluation_strategy="no",
-    learning_rate=1e-4,
-    per_device_train_batch_size=1,
-    per_device_eval_batch_size=1,
-    num_train_epochs=num_epochs,
-    weight_decay=1e-2,
-    load_best_model_at_end=True,
-    metric_for_best_model="rougeL",  # Choose a specific ROUGE variant
-    greater_is_better=True,
-    save_strategy="no",
-)
-
-data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
-
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_train_dataset,
-    eval_dataset=tokenized_eval_dataset,
-    data_collator=data_collator,
-    compute_metrics=compute_metrics,
-)
-
-trainer.train()
-
-trainer.model.save_pretrained(model_name)
-tokenizer.save_pretrained(model_name)
+print("Done!")

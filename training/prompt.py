@@ -1,26 +1,26 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import sys
 import torch
+from transformers import T5TokenizerFast, T5ForConditionalGeneration
+import pylev
+from sentence_transformers import SentenceTransformer, util
+import sys
 
-model_name = sys.argv[1]
+MODEL = sys.argv[1]
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+# Initializing models and tokenizers
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+tokenizer = T5TokenizerFast.from_pretrained(f"./{MODEL}")
+model = T5ForConditionalGeneration.from_pretrained(f"./{MODEL}").to(device)
 
-comma_token_id = tokenizer.encode(",", add_special_tokens=False)[0]
 
+# Calculates the levenschtein distance to see how much the model varied the original text
+def get_distance(a, b):
+    return pylev.levenshtein(a.split(), b.split())
+
+
+# Main loop
 while True:
-    prompt = input("Enter your prompt: ")
-    input_ids = tokenizer.encode(prompt, return_tensors="pt")
-    attention_mask = torch.ones(input_ids.shape, dtype=torch.long, device=model.device)
-    output = model.generate(
-        input_ids,
-        attention_mask=attention_mask,
-        max_length=128,
-        do_sample=True,
-        early_stopping=True,
-        eos_token_id=comma_token_id,
-    )
-    responses = tokenizer.decode(output[0], skip_special_tokens=True).split(".")
-    print(responses[0] + ".")
-    print(responses[1] + ".")
+    text = input("Enter text to paraphrase: ")
+    tokenized_input = tokenizer(text, return_tensors="pt").to(device)
+    encoded_output = model.generate(**tokenized_input, max_length=1000)[0]
+    decoded = tokenizer.decode(encoded_output, skip_special_tokens=True)
+    print("Response:", decoded)
