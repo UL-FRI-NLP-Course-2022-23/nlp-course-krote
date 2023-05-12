@@ -5,7 +5,7 @@ from tqdm import tqdm
 import time
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-stop = 7000
+stop = 14107
 
 prompt = """
 I am a Slovene paraphrasing bot. I will read a Slovene sentence and rewrite it with a the same meaning but in different words.
