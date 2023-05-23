@@ -2,11 +2,11 @@ import json
 import random
 
 # Define path to sentences file here
-FILE_PATH = "../data/sentences_openai.json"
-RANDOM_SAMPLE_SIZE = 100
+FILE_PATH = "../data/backtranslation_openai.json"
+RANDOM_SAMPLE_SIZE = 10
 
 # Output results file path
-OUTPUT_FILE_PATH = "../data/results/evaluation_results.json"
+OUTPUT_FILE_PATH = "../data/results/results_backtranslation_openai.json"
 
 
 def load_sentences(path):
@@ -19,25 +19,25 @@ def ask_for_ratings():
     """Ask user to rate sentence pairs and validate user input"""
 
     while True:
-        # Rate paraphrase
-        paraphrase_rating = input("Rate paraphrase (1-5): ")
         # Rate meaning preservation
-        meaning_rating = input("Rate meaning preservation (1-5): ")
-        # Rate fluency
-        fluency_rating = input("Rate fluency (1-5): ")
+        meaning_rating = input("Rate meaning preservation (1-3): ")
+        # Rate fluency (grammatical and idiomatic correctness)
+        fluency_rating = input("Rate fluency (1-3): ")
+        # Rate paraphrase
+        diversity_rating = input("Rate diversity (1-3): ")
 
-        ratings = {"paraphrase_rating": float(paraphrase_rating), "meaning_rating": float(meaning_rating),
-                   "fluency_rating": float(fluency_rating)}
+        ratings = {"meaning": float(meaning_rating),
+                   "fluency": float(fluency_rating), "diversity": float(diversity_rating)}
 
         # Validate ratings are number and not string
         try:
-            # Validate every rating is between 1 and 5
-            if all(1 <= float(rating) <= 5 for rating in ratings.values()):
+            # Validate every rating is between 1 and 4
+            if all(1 <= float(rating) <= 4 for rating in ratings.values()):
                 break
             else:
-                print("Wrong format. Please enter a number between 1 and 5.\n")
+                print("Wrong format. Please enter a number between 1 and 3.\n")
         except ValueError:
-            print("Wrong format. Please enter a number between 1 and 5.\n")
+            print("Wrong format. Please enter a number between 1 and 3.\n")
 
     return ratings
 
@@ -73,10 +73,10 @@ def evaluate_sentences(input_file=FILE_PATH, output_file=OUTPUT_FILE_PATH):
             # Add sentence pair to evaluation results
             results.append(ratings)
 
-            # Write ratings to file in JSON format
-            json.dump(results, f, indent=2, ensure_ascii=False)
-
             print("\n")
+
+        # Write ratings to file in JSON format
+        json.dump(results, f, indent=2, ensure_ascii=False)
 
 
 if __name__ == '__main__':
