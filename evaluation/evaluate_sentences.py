@@ -74,7 +74,7 @@ def evaluate_sentences(input_file=FILE_PATH, output_file=OUTPUT_FILE_PATH):
             results.append(ratings)
 
             # Write ratings to file in JSON format
-            json.dump(results, f, indent=2)
+            json.dump(results, f, indent=2, ensure_ascii=False)
 
             print("\n")
 
