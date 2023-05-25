@@ -35,8 +35,10 @@ def compare_models(directory):
         if file_name.endswith('.json'):
             file_path = os.path.join(directory, file_name)
             json_data = load_json(file_path)
-            avg_meaning, avg_fluency, avg_diversity = compute_avg_scores(json_data)
-            model_name = os.path.splitext(file_name)[0]  # assuming model name is file name without extension
+            avg_meaning, avg_fluency, avg_diversity = compute_avg_scores(
+                json_data)
+            # assuming model name is file name without extension
+            model_name = os.path.splitext(file_name)[0]
             data.append({
                 'Model Name': model_name,
                 'Average Meaning Score': avg_meaning,
@@ -54,7 +56,7 @@ def plot_scores(df):
     plt.ylabel('Score')
     plt.title('Average Scores for each Paraphrasing Model')
     plt.tight_layout()
-    plt.show()
+    plt.savefig('scores.png')
 
 
 # usage

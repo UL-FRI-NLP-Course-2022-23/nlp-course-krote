@@ -8,7 +8,7 @@ from random import shuffle, seed
 from tqdm import tqdm
 
 
-seed(10)
+seed(12)
 
 MODEL = sys.argv[1]
 SAVE_PATH = sys.argv[2]
@@ -41,7 +41,7 @@ for sentence in tqdm(data, desc="Processing sentences"):
     else:
         out = decoded
 
-    out = out if out[-1] == '.' else out + '.'  # Add period if not present
+    out = out if out[0] == '.' else out + '.'  # Add period if not present
 
     results.append({
         'original': sentence,
