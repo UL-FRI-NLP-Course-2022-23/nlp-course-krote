@@ -6,4 +6,9 @@ Team members:
  * `Žiga Patačko Koderman`, `63200339`, `zp3833@student.uni-lj.si`
  
 Group public acronym/name: `Krote`
- > This value will be used for publishing marks/scores. It will be known only to you and not you colleagues.
+
+---
+*Abstract*: 
+Sentence paraphrasing is a widely studied problem in natural language processing. In this paper, we discuss the problem of sentence paraphrasing and compare different approaches to this task. We introduce different evaluation metrics that are used to assess the quality of the models created. We present our approach to sentence paraphrasing and compare it with a model based on traditional methods. We also introduce our data set that was used to the model training. Our data set was generated using OpenAI's GPT-3 model, which is a novel approach to data set generation, and we also compare it to the traditional back-translation method.
+
+The final report can be found in folder *3 - submission*.
